@@ -8,15 +8,13 @@ const stripe = require("stripe")(process.env.STRIPE_SECRET);
 
 const app = express();
 const port = 5000;
-// firebasee admin
+// firebasee admin key---
 const admin = require("firebase-admin");
-
 const serviceAccount = require("./zap-shift-client-key.json");
-
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
-// middleware
+// middleware--------
 app.use(cors());
 app.use(express.json());
 // token verify ----------
@@ -99,7 +97,11 @@ async function run() {
       res.send(result);
     });
     // user patch
-    app.patch("/users/:id/role",verfiyFBToken, veryfiyAdminToken, async (req, res) => {
+    app.patch(
+      "/users/:id/role",
+      verfiyFBToken,
+      veryfiyAdminToken,
+      async (req, res) => {
         const id = req.params.id;
         const roleInfo = req.body;
         const query = { _id: new ObjectId(id) };
