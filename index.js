@@ -73,6 +73,16 @@ async function run() {
       }
       next();
     };
+    // must be use after veryfiy token rider
+    const veryfiyRiderToken = async (req, res, next) => {
+      const email = req.decoded_email;
+      const query = { email };
+      const user = await userCollection.findOne(query);
+      if (!user || user.role !== "rider") {
+        return res.status(403).send({ message: "forbidden  access" });
+      }
+      next();
+    };
     // await logTracking
     const logTracking = async (trackingId, status) => {
       const log = {
@@ -160,6 +170,25 @@ async function run() {
         .find(query)
         .sort({ creation_date: -1 })
         .toArray();
+      res.send(result);
+    });
+    // aggrrgate
+    app.get("/parcels/delivery_status/stats", async (req, res) => {
+      const pipeline = [
+        {
+          $group: {
+            _id: "$delivery_status",
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $project: {
+            status: "$_id",
+            count: 1,
+          },
+        },
+      ];
+      const result = await parcelCollection.aggregate(pipeline).toArray();
       res.send(result);
     });
     // parcel rider
@@ -289,6 +318,7 @@ async function run() {
         mode: "payment",
         metadata: {
           parcelId: paymentInfo.parcelId,
+          trackingId: paymentInfo.trackingId,
         },
         success_url: `${process.env.SITE_DOMAIN}/dashboard/payment-success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${process.env.SITE_DOMAIN}/dashboard/payment-cencelled`,
@@ -342,7 +372,7 @@ async function run() {
         return res.send({ message: "already exists", transactionId });
       }
       // tracking
-      const trackingId = generateTrackingID();
+      const trackingId = session.metadata.trackingId;
       // paid
       if (session.payment_status === "paid") {
         const id = session.metadata.parcelId;
@@ -351,7 +381,7 @@ async function run() {
           $set: {
             payment_status: "paid",
             delivery_status: "pending-pickup",
-            trackingId: trackingId,
+            // trackingId: trackingId,
           },
         };
         const result = await parcelCollection.updateOne(query, update);
@@ -422,6 +452,30 @@ async function run() {
       const result = await cursor.toArray();
       res.send(result);
     });
+    // aggreget rider delivery part day
+    app.get("/riders/delivery-per-day", async (req, res) => {
+      const email = req.query.email;
+      // aggreget on parcels
+      const pipeline = [
+        {
+          $match: {
+            riderEmail: email,
+            delivery_status: "parcel_delivered",
+          },
+        },
+        // {
+        //   $lookup: {
+        //     from: "trackings",
+        //     localField: "trackingId",
+        //     foreignFeild: "trackinId",
+        //     as: "parcel_trackings",
+        //   },
+        // },
+        // {$unwind:'$parcel_trackings'}
+      ];
+      const result = await parcelCollection.aggregate(pipeline).toArray();
+      res.send(result);
+    });
     // rider post
     app.post("/riders", async (req, res) => {
       const rider = req.body;
@@ -473,16 +527,16 @@ async function run() {
     });
     // ---------------trackings related apis------------------
     app.get("/trackings/:trackingId/logs", async (req, res) => {
-       const trackingId = req.params.trackingId;
+      const trackingId = req.params.trackingId;
       const query = { trackingId };
       const result = await trackingsCollection.find(query).toArray();
       res.send(result);
     });
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!",
-    );
+    // await client.db("admin").command({ ping: 1 });
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!",
+    // );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
