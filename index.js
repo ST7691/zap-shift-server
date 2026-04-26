@@ -10,7 +10,11 @@ const app = express();
 const port = 5000;
 // firebasee admin key---
 const admin = require("firebase-admin");
-const serviceAccount = require("./zap-shift-client-key.json");
+// const serviceAccount = require("./zap-shift-client-key.json");
+// const serviceAccount = require("./firebase-admin-key.json");
+
+const decoded = Buffer.from(process.env.FB_SERVICE_KEY, 'base64').toString('utf8')
+const serviceAccount = JSON.parse(decoded);
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
@@ -41,7 +45,11 @@ const verfiyFBToken = async (req, res, next) => {
   }
 };
 // db user-------------mongo db----
-const uri = process.env.DB_USER;
+// const uri = process.env.DB_USER;
+// const uri =
+//   `mongodb+srv://zapshift_user:${process.env.DB_PASSWORD}@cluster0.8cvksch.mongodb.net/?appName=Cluster0`;
+const uri = `mongodb://zapshift_user:${process.env.DB_PASSWORD}@ac-uqilrxh-shard-00-00.8cvksch.mongodb.net:27017,ac-uqilrxh-shard-00-01.8cvksch.mongodb.net:27017,ac-uqilrxh-shard-00-02.8cvksch.mongodb.net:27017/?ssl=true&replicaSet=atlas-cpvups-shard-0&authSource=admin&appName=Cluster0`;
+
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -533,10 +541,10 @@ async function run() {
       res.send(result);
     });
     // Send a ping to confirm a successful connection
-    // await client.db("admin").command({ ping: 1 });
-    // console.log(
-    //   "Pinged your deployment. You successfully connected to MongoDB!",
-    // );
+    await client.db("admin").command({ ping: 1 });
+    console.log(
+      "Pinged your deployment. You successfully connected to MongoDB!",
+    );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();

@@ -3,3 +3,4 @@ node_modules
 
 *.json
 zap-shift-client-firebase-adminsdk-*.json
+.vercel
