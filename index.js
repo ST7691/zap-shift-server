@@ -7,7 +7,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const stripe = require("stripe")(process.env.STRIPE_SECRET);
 
 const app = express();
-const port = 5000;
+const port =process.env.PORT|| 5000;
 // firebasee admin key---
 const admin = require("firebase-admin");
 // const serviceAccount = require("./zap-shift-client-key.json");
